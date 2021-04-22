@@ -14,7 +14,7 @@ var httpServer *http.Server //http server
 func Run() {
 
 	httpServer = &http.Server{
-		Addr:              ":8095",
+		Addr:              ":80",
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      40 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -34,6 +34,7 @@ func routers() http.Handler {
 
 	mux.HandleFunc("/ping", ping)
 	mux.HandleFunc("/acc", addAcc)
+	mux.HandleFunc("/accs", getAccs)
 	mux.HandleFunc("/credit", credit)
 	mux.HandleFunc("/debit", debit)
 	mux.HandleFunc("/p2p", p2p)
