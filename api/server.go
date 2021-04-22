@@ -14,7 +14,7 @@ var httpServer *http.Server //http server
 func Run() {
 
 	httpServer = &http.Server{
-		Addr:              ":80",
+		Addr:              ":8095",
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      40 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,

@@ -15,6 +15,9 @@ import (
 func main() {
 	decimal.MarshalJSONWithoutQuotes = true
 	host := os.Getenv("DBHOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
 	connStr := "postgres://root@" + host + ":26257/bank?sslmode=disable&pool_max_conns=100"
 	err := db.Connect(connStr)
 	if err != nil {
