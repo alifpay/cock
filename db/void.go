@@ -12,7 +12,7 @@ import (
 //void transaction
 func Void(ctx context.Context, ServiceName, ExternalRef, description string) (code int, err error) {
 	str := `INSERT INTO txns(service_name, external_ref, txn_type, account, currency, amount, fee, description) 
-	SELECT service_name, external_ref, concat('void', txn_type), account, currency, amount*-1, fee, $1
+	SELECT service_name, external_ref, concat('void', txn_type), account, currency, amount*-1, fee, $1 FROM txns
 	WHERE service_name = $2 AND external_ref = $3 AND txn_type IN ('debit', 'credit') AND status = 'approved'`
 
 	cmd, err := conn.Exec(ctx, str, description, ServiceName, ExternalRef)
@@ -27,9 +27,10 @@ func Void(ctx context.Context, ServiceName, ExternalRef, description string) (co
 	}
 
 	str = `SELECT txn_type, account, currency, amount 
-		   FROM txns service_name = $1 AND external_ref = $2 AND txn_type IN ('debit', 'credit') AND status = 'approved'`
+		   FROM txns WHERE service_name = $1 AND external_ref = $2 AND txn_type IN ('debit', 'credit') AND status = 'approved'`
 	rows, err := conn.Query(ctx, str, ServiceName, ExternalRef)
 	if err != nil {
+		code = 503
 		return
 	}
 	defer rows.Close()
@@ -39,6 +40,7 @@ func Void(ctx context.Context, ServiceName, ExternalRef, description string) (co
 		c := voidTxn{}
 		err = rows.Scan(&c.TxnType, &c.Account, &c.Currency, &c.Amount)
 		if err != nil {
+			code = 503
 			return
 		}
 		cs = append(cs, c)
@@ -73,10 +75,17 @@ func Void(ctx context.Context, ServiceName, ExternalRef, description string) (co
 	default:
 		code = 503 // db error
 	}
-	_, err = conn.Exec(ctx,
+	cmd, err = conn.Exec(ctx,
 		`UPDATE txns SET stsdate = now(), status = 'failed', err_code = $1, err = $2 
 		WHERE service_name = $3 AND external_ref = $4 AND txn_type IN ('voiddebit', 'voidcredit') AND status = 'pending'`,
 		code, err.Error(), ServiceName, ExternalRef)
+	if err != nil {
+		return
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		err = errors.New("no rows affected")
+		return
+	}
 	return
 }
 
@@ -100,14 +109,22 @@ func voidP2PTx(ctx context.Context, tx pgx.Tx, vs []voidTxn, ServiceName, Extern
 		if v.TxnType == "debit" {
 			str = "UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND currency = $3"
 		}
-		if _, err := tx.Exec(ctx, str, v.Amount, v.Account, v.Currency); err != nil {
+		cmd, err := tx.Exec(ctx, str, v.Amount.Abs(), v.Account, v.Currency)
+		if err != nil {
 			return err
 		}
+		if ra := cmd.RowsAffected(); ra == 0 {
+			return errors.New("no rows affected")
+		}
 		//approve transaction
-		if _, err := tx.Exec(ctx,
+		cmd, err = tx.Exec(ctx,
 			`UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 
-			 WHERE service_name = $2 AND external_ref = $3 AND txn_type = $4`, balance, ServiceName, ExternalRef, v.TxnType); err != nil {
+			 WHERE service_name = $2 AND external_ref = $3 AND txn_type = $4`, balance, ServiceName, ExternalRef, "void"+v.TxnType)
+		if err != nil {
 			return err
+		}
+		if ra := cmd.RowsAffected(); ra == 0 {
+			return errors.New("no rows affected")
 		}
 	}
 	return nil
@@ -132,14 +149,22 @@ func voidTx(ctx context.Context, tx pgx.Tx, v voidTxn, ServiceName, ExternalRef 
 	if v.TxnType == "debit" {
 		str = "UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND currency = $3"
 	}
-	if _, err := tx.Exec(ctx, str, v.Amount, v.Account, v.Currency); err != nil {
+	cmd, err := tx.Exec(ctx, str, v.Amount.Abs(), v.Account, v.Currency)
+	if err != nil {
 		return err
 	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
+	}
 	//approve transaction
-	if _, err := tx.Exec(ctx,
+	cmd, err = tx.Exec(ctx,
 		`UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 
-		 WHERE service_name = $2 AND external_ref = $3 AND txn_type = $4`, balance, ServiceName, ExternalRef, v.TxnType); err != nil {
+		 WHERE service_name = $2 AND external_ref = $3 AND txn_type = $4`, balance, ServiceName, ExternalRef, "void"+v.TxnType)
+	if err != nil {
 		return err
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
 	}
 	return nil
 }

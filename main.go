@@ -9,10 +9,13 @@ import (
 
 	"github.com/alifpay/cock/api"
 	"github.com/alifpay/cock/db"
+	"github.com/shopspring/decimal"
 )
 
 func main() {
-	connStr := "postgres://jack:secret@127.0.0.1:5432/bank?pool_max_conns=100"
+	decimal.MarshalJSONWithoutQuotes = true
+	host := os.Getenv("DBHOST")
+	connStr := "postgres://root@" + host + ":26257/bank?sslmode=disable&pool_max_conns=100"
 	err := db.Connect(connStr)
 	if err != nil {
 		log.Fatalln(err)

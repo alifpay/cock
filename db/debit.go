@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"github.com/alifpay/cock/models"
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx"
@@ -37,7 +38,13 @@ func Debit(ctx context.Context, in models.Request) (id uint64, code int, err err
 	default:
 		code = 503 // db error
 	}
-	_, err = conn.Exec(ctx, "UPDATE txns SET stsdate = now(), status = 'failed', err_code = $1, err = $2 WHERE id = $3", code, err.Error(), id)
+	cmd, err := conn.Exec(ctx, "UPDATE txns SET stsdate = now(), status = 'failed', err_code = $1, err = $2 WHERE id = $3", code, err.Error(), id)
+	if err != nil {
+		return
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		err = errors.New("no rows affected")
+	}
 	return
 }
 
@@ -62,14 +69,20 @@ func debitTx(ctx context.Context, tx pgx.Tx, in models.Request, id uint64) error
 	}
 
 	// Perform the debit.
-	_, err = tx.Exec(ctx, "UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND currency = $3", in.Amount, in.Account, in.Currency)
+	cmd, err := tx.Exec(ctx, "UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND currency = $3", in.Amount, in.Account, in.Currency)
 	if err != nil {
 		return err
 	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
+	}
 	//approve transaction
-	_, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance, id)
+	cmd, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance, id)
 	if err != nil {
 		return err
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
 	}
 	return nil
 }

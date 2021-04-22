@@ -33,6 +33,7 @@ func routers() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ping", ping)
+	mux.HandleFunc("/acc", addAcc)
 	mux.HandleFunc("/credit", credit)
 	mux.HandleFunc("/debit", debit)
 	mux.HandleFunc("/p2p", p2p)

@@ -48,6 +48,13 @@ func p2p(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Currency == req.Currency2 && !req.Amount.Equal(req.Amount2) {
+		resp.Code = 402
+		resp.Message = "invalid amount"
+		reply(w, resp)
+		return
+	}
+
 	id, code, err := db.P2P(r.Context(), req)
 	if err != nil {
 		log.Println("db.P2P", err)

@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"github.com/alifpay/cock/models"
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx"
@@ -43,7 +44,13 @@ func P2P(ctx context.Context, in models.Request) (id uint64, code int, err error
 	default:
 		code = 503 // db error
 	}
-	_, err = conn.Exec(ctx, "UPDATE txns SET stsdate = now(), status = 'failed', err_code = $1, err = $2 WHERE id IN ($3, $4)", code, err.Error(), id, id2)
+	cmd, err := conn.Exec(ctx, "UPDATE txns SET stsdate = now(), status = 'failed', err_code = $1, err = $2 WHERE id IN ($3, $4)", code, err.Error(), id, id2)
+	if err != nil {
+		return
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		err = errors.New("no rows affected")
+	}
 	return
 }
 
@@ -81,27 +88,39 @@ func p2pTx(ctx context.Context, tx pgx.Tx, in models.Request, id, id2 uint64) er
 	}
 
 	// Perform the debit.
-	_, err = tx.Exec(ctx, "UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND currency = $3", in.Amount, in.Account, in.Currency)
+	cmd, err := tx.Exec(ctx, "UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND currency = $3", in.Amount, in.Account, in.Currency)
 	if err != nil {
 		return err
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
 	}
 
 	// Perform the credit.
-	_, err = tx.Exec(ctx, "UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND currency = $3", in.Amount2, in.Account2, in.Currency2)
+	cmd, err = tx.Exec(ctx, "UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND currency = $3", in.Amount2, in.Account2, in.Currency2)
 	if err != nil {
 		return err
 	}
-
-	//approve transaction
-	_, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance, id)
-	if err != nil {
-		return err
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
 	}
 
 	//approve transaction
-	_, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance2, id2)
+	cmd, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance, id)
 	if err != nil {
 		return err
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
+	}
+
+	//approve transaction
+	cmd, err = tx.Exec(ctx, "UPDATE txns SET balance = $1, stsdate = now(), status = 'approved', err_code = 200 WHERE id = $2", balance2, id2)
+	if err != nil {
+		return err
+	}
+	if ra := cmd.RowsAffected(); ra == 0 {
+		return errors.New("no rows affected")
 	}
 	return nil
 }
