@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS accounts
     PRIMARY KEY(id, currency)
 );
 
+CREATE INDEX ON accounts (regdate, external_ref, status);
+
 CREATE TABLE IF NOT EXISTS txns
 (
     id BIGSERIAL PRIMARY KEY    NOT NULL,
@@ -35,4 +37,4 @@ CREATE TABLE IF NOT EXISTS txns
     UNIQUE (service_name, external_ref, txn_type)
 );
 
-CREATE INDEX ON txns (account, currency, amount);
+CREATE INDEX ON txns (account, currency, amount, regdate);

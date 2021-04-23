@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/alifpay/cock/models"
@@ -14,7 +15,7 @@ var httpServer *http.Server //http server
 func Run() {
 
 	httpServer = &http.Server{
-		Addr:              ":80",
+		Addr:              ":8095",
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      40 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -54,5 +55,6 @@ func Shutdown(ctx context.Context) {
 
 //Ping handler
 func ping(w http.ResponseWriter, r *http.Request) {
-	reply(w, models.Response{Code: 200})
+	hostname, _ := os.Hostname()
+	reply(w, models.Response{Code: 200, Message: hostname})
 }
