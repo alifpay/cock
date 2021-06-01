@@ -8,6 +8,6 @@
     - strong transactional consistency across at least availability zones (i.e. ACID compliance) 
     - relational database front end structure – meaning data represented as tables with rows and columns similar to any other RDBMS
     - automatically sharded data storage
-    - underlying key–value storage[6][1]
+    - underlying key–value storage
     - native SQL implementation
     
