@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 )
 
 func GetTxns(ctx context.Context, f models.FilterTxn) (resp models.FilterResponse, err error) {
