@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx"
 	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
