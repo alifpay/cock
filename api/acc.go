@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/alifpay/cock/db"
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/db"
+	"github.com/alifpay/croach/models"
 )
 
 func addAcc(w http.ResponseWriter, r *http.Request) {
