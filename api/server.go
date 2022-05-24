@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 )
 
 var httpServer *http.Server //http server
