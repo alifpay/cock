@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 )
 
 func GetBal(ctx context.Context, in models.Request) (acc models.Balance, err error) {
