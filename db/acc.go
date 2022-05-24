@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 )
 
 func AddAcc(ctx context.Context, a models.Acc) error {
