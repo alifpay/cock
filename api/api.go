@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alifpay/cock/models"
+	"github.com/alifpay/croach/models"
 	"github.com/go-playground/validator/v10"
 	jsoniter "github.com/json-iterator/go"
 )
