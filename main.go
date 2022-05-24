@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/alifpay/cock/api"
-	"github.com/alifpay/cock/db"
+	"github.com/alifpay/croach/api"
+	"github.com/alifpay/croach/db"
 	"github.com/shopspring/decimal"
 )
 
